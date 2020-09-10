@@ -10,10 +10,7 @@ import java.lang.annotation.*;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface Access {
-
-    int times() default 3;
-    int seconds() default 60;
+public @interface Tourist {
 
 
 }

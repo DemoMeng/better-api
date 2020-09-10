@@ -1,9 +1,10 @@
 package com.api.core.interceptor;
 
-import com.api.core.annotation.Access;
+import com.api.core.annotation.Tourist;
 import com.api.core.redis.RedisService;
 import com.api.core.util.WebUtil;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -21,22 +22,32 @@ import java.lang.reflect.Method;
 @Component
 public class AccessInterceptor implements HandlerInterceptor {
 
+    private final static int allTime = 0;
+    /** 单位：秒 */
+    private final static int allSecond = 120;
+
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         if(handler instanceof HandlerMethod){
             HandlerMethod handlerMethod = (HandlerMethod) handler;
             Method method = handlerMethod.getMethod();
-            //放行非 Access 注解的方法
-            if(!method.isAnnotationPresent(Access.class)){
+            /**放行游客*/
+            if(method.isAnnotationPresent(Tourist.class)){
                 return true;
             }
-            Access access = method.getAnnotation(Access.class);
-            if(access == null){
-                return true;
+            String token = request.getHeader("token");
+            if(StringUtils.isEmpty(token)){
+                output(response,"{\"code\":433,\"msg\":\"token为空\"}");
+                return false;
+            }
+            String jwt = (String) RedisService.get(token);
+            if(StringUtils.isEmpty(jwt)){
+                output(response,"{\"code\":434,\"msg\":\"token不存在\"}");
+                return false;
             }
             //键为 ip+接口名称  值为被可以被调用次数
-            int times = access.times();
-            int seconds = access.seconds();
+            int times = allTime;
+            int seconds = allSecond;
             String ip = WebUtil.getClientIP(request);
             String key = ip+request.getRequestURI();
             Integer value = (Integer) RedisService.get(key);
